@@ -24,11 +24,13 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
+from qgis.gui import QgsProjectionSelectionDialog
 # Initialize Qt resources from file resources.py
 from .resources import *
-
+from qgis.core import QgsUnitTypes, QgsCoordinateTransform, QgsCoordinateReferenceSystem, QgsPointXY
 # Import the code for the DockWidget
 from .position_fetch_dockwidget import PositionGetterDockWidget
+from .coordinate_capture_map_tool import CoordinateCaptureMapTool
 import os.path
 
 
@@ -72,6 +74,20 @@ class PositionGetter:
 
         self.pluginIsActive = False
         self.dockwidget = None
+
+        self.crs = QgsCoordinateReferenceSystem("EPSG:4326")
+        self.transform = QgsCoordinateTransform()
+        self.transform.setDestinationCrs(self.crs)
+        if self.crs.mapUnits() == QgsUnitTypes.DistanceDegrees:
+            self.userCrsDisplayPrecision = 5
+        else:
+            self.userCrsDisplayPrecision = 3
+        self.canvasCrsDisplayPrecision = None
+        self.iface.mapCanvas().destinationCrsChanged.connect(self.setSourceCrs)
+        self.setSourceCrs()
+        self.mapTool = CoordinateCaptureMapTool(self.iface.mapCanvas())
+        # self.mapTool.mouseMoved.connect(self.mouseMoved)
+        self.mapTool.mouseClicked.connect(self.mouseClicked)
 
 
     # noinspection PyMethodMayBeStatic
@@ -223,6 +239,9 @@ class PositionGetter:
                 # Create the dockwidget (after translation) and keep reference
                 self.dockwidget = PositionGetterDockWidget()
 
+                self.dockwidget.userCrsToolButton.clicked.connect(self.setCrs)
+                self.dockwidget.captureButton.clicked.connect(self.startCapturing)
+
             # connect to provide cleanup on closing of dockwidget
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
 
@@ -230,3 +249,43 @@ class PositionGetter:
             # TODO: fix to allow choice of dock location
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwidget)
             self.dockwidget.show()
+
+
+    def setCrs(self):
+        selector = QgsProjectionSelectionDialog(self.iface.mainWindow())
+        selector.setCrs(self.crs)
+        if selector.exec():
+            self.crs = selector.crs()
+            self.transform.setDestinationCrs(self.crs)
+            if self.crs.mapUnits() == QgsUnitTypes.DistanceDegrees:
+                self.userCrsDisplayPrecision = 5
+            else:
+                self.userCrsDisplayPrecision = 3
+
+    def setSourceCrs(self):
+        self.transform.setSourceCrs(self.iface.mapCanvas().mapSettings().destinationCrs())
+        if self.iface.mapCanvas().mapSettings().destinationCrs().mapUnits() == QgsUnitTypes.DistanceDegrees:
+            self.canvasCrsDisplayPrecision = 5
+        else:
+            self.canvasCrsDisplayPrecision = 3
+
+    # def mouseClicked(self, point: QgsPointXY):
+        # self.dockwidget.trackMouseButton.setChecked(False)
+        # print(point)
+        # self.update(point)
+    def mouseClicked(self, point: QgsPointXY):
+        # self.dockwidget.trackMouseButton.setChecked(False)
+        self.update(point)
+
+    def update(self, point: QgsPointXY):
+        userCrsPoint = self.transform.transform(point)
+        self.dockwidget.userCrsEdit.setText('{0:.{2}f},{1:.{2}f}'.format(userCrsPoint.x(),
+                                                                         userCrsPoint.y(),
+                                                                         self.userCrsDisplayPrecision))
+        # self.dockwidget.canvasCrsEdit.setText('{0:.{2}f},{1:.{2}f}'.format(point.x(),
+        #                                                                 point.y(),
+        #                                                                 self.canvasCrsDisplayPrecision))
+
+    def startCapturing(self):
+        self.iface.mapCanvas().setMapTool(self.mapTool)
+
