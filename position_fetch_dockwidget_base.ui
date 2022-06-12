@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>232</width>
-    <height>141</height>
+    <width>331</width>
+    <height>227</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,17 +18,24 @@
     <item row="0" column="0">
      <widget class="QLineEdit" name="userCrsEdit"/>
     </item>
-    <item row="1" column="0">
+    <item row="2" column="0">
      <widget class="QPushButton" name="captureButton">
       <property name="text">
-       <string>PushButton</string>
+       <string>捕捉点</string>
       </property>
      </widget>
     </item>
-    <item row="2" column="0">
+    <item row="3" column="0">
      <widget class="QPushButton" name="userCrsToolButton">
       <property name="text">
-       <string>crs</string>
+       <string>坐标系</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QPushButton" name="orcButton">
+      <property name="text">
+       <string>读取粘贴板</string>
       </property>
      </widget>
     </item>

@@ -31,6 +31,7 @@ from qgis.core import QgsUnitTypes, QgsCoordinateTransform, QgsCoordinateReferen
 # Import the code for the DockWidget
 from .position_fetch_dockwidget import PositionGetterDockWidget
 from .coordinate_capture_map_tool import CoordinateCaptureMapTool
+from .orc_main import orc_run
 import os.path
 
 
@@ -241,6 +242,7 @@ class PositionGetter:
 
                 self.dockwidget.userCrsToolButton.clicked.connect(self.setCrs)
                 self.dockwidget.captureButton.clicked.connect(self.startCapturing)
+                self.dockwidget.orcButton.clicked.connect(self.orc)
 
             # connect to provide cleanup on closing of dockwidget
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
@@ -285,7 +287,8 @@ class PositionGetter:
         # self.dockwidget.canvasCrsEdit.setText('{0:.{2}f},{1:.{2}f}'.format(point.x(),
         #                                                                 point.y(),
         #                                                                 self.canvasCrsDisplayPrecision))
-
+    def orc(self):
+        self.dockwidget.userCrsEdit.setText(orc_run())
     def startCapturing(self):
         self.iface.mapCanvas().setMapTool(self.mapTool)
 
