@@ -24,11 +24,17 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-from qgis.gui import QgsProjectionSelectionDialog
+# from qgis.gui import QgsProjectionSelectionDialog
 # Initialize Qt resources from file resources.py
 from .resources import *
-from qgis.core import QgsUnitTypes, QgsCoordinateTransform, QgsCoordinateReferenceSystem, QgsPointXY
+# from qgis.core import QgsUnitTypes, QgsCoordinateTransform, QgsCoordinateReferenceSystem, QgsPointXY
 # Import the code for the DockWidget
+from qgis.core import *
+from qgis.gui import *
+# from PyQt5.QtCore import *
+# from PyQt5.QtGui import *
+import numpy as np
+
 from .position_fetch_dockwidget import PositionGetterDockWidget
 from .coordinate_capture_map_tool import CoordinateCaptureMapTool
 from .orc_main import orc_run
@@ -243,6 +249,7 @@ class PositionGetter:
                 self.dockwidget.userCrsToolButton.clicked.connect(self.setCrs)
                 self.dockwidget.captureButton.clicked.connect(self.startCapturing)
                 self.dockwidget.orcButton.clicked.connect(self.orc)
+                self.dockwidget.zoomButton.clicked.connect(self.zoomTo)
 
             # connect to provide cleanup on closing of dockwidget
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
@@ -252,7 +259,27 @@ class PositionGetter:
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwidget)
             self.dockwidget.show()
 
+    def zoomTo(self):
 
+        def expand_d(x, y, d):
+            ################################经纬度加距离
+            #    Zone = np.floor((180 + x) / 6) + 1
+            #    crsSrc = QgsCoordinateReferenceSystem(4326)
+            #    crsDest = QgsCoordinateReferenceSystem(int(str('326') + str(int(Zone))))
+            #    xform = QgsCoordinateTransform(crsSrc, crsDest)
+            #    p1 = xform.transform(x,y)
+            #    # QgsPoint
+            #    pt2 = xform.transform(QgsPoint(p1[0]+d, p1[1]+d), QgsCoordinateTransform.ReverseTransform)
+            pt2 = [x + d, y + d]
+            return pt2[0], pt2[1]
+
+        canvas = self.iface.mapCanvas()
+        template = self.dockwidget.userCrsEdit.text().split(',')
+        XY = [float(template[0]), float(template[1])]
+        x1, y1 = expand_d(XY[0], XY[1], -0.001)
+        x2, y2 = expand_d(XY[0], XY[1], 0.001)
+        canvas.setExtent(QgsRectangle(x1, y1, x2, y2))
+        canvas.refresh()
     def setCrs(self):
         selector = QgsProjectionSelectionDialog(self.iface.mainWindow())
         selector.setCrs(self.crs)
@@ -281,9 +308,20 @@ class PositionGetter:
 
     def update(self, point: QgsPointXY):
         userCrsPoint = self.transform.transform(point)
-        self.dockwidget.userCrsEdit.setText('{0:.{2}f},{1:.{2}f}'.format(userCrsPoint.x(),
-                                                                         userCrsPoint.y(),
-                                                                         self.userCrsDisplayPrecision))
+        x,y=userCrsPoint.x(),userCrsPoint.y()
+        template=self.dockwidget.templateEdit.text()
+
+        try:
+            strings=eval(template)
+        except :
+            strings='except:{0:.{2}f},{1:.{2}f}'.format(userCrsPoint.x(),userCrsPoint.y(),self.userCrsDisplayPrecision)
+        # strings='%.6f,%.6f'%(arr)
+
+        self.dockwidget.userCrsEdit.setText(strings)
+        # self.dockwidget.userCrsEdit.setText('{0:.{2}f},{1:.{2}f}'.format(userCrsPoint.x(),
+        #                                                                  userCrsPoint.y(),
+        #                                                                  self.userCrsDisplayPrecision))
+
         # self.dockwidget.canvasCrsEdit.setText('{0:.{2}f},{1:.{2}f}'.format(point.x(),
         #                                                                 point.y(),
         #                                                                 self.canvasCrsDisplayPrecision))
