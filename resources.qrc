@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/plugins/position_fetch" >
-        <file>icon.png</file>
+        <file>fetchIcon.png</file>
+        <file>imageshowIcon.png</file>
     </qresource>
 </RCC>

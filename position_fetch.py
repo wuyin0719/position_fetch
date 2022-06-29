@@ -34,7 +34,7 @@ from qgis.gui import *
 # from PyQt5.QtCore import *
 # from PyQt5.QtGui import *
 import numpy as np
-
+from .ImageShowMain import imageShowmain
 from .position_fetch_dockwidget import PositionGetterDockWidget
 from .coordinate_capture_map_tool import CoordinateCaptureMapTool
 from .orc_main import orc_run
@@ -190,11 +190,18 @@ class PositionGetter:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/position_fetch/icon.png'
+        icon_path = ':/plugins/position_fetch/fetchIcon.png'
         self.add_action(
             icon_path,
             text=self.tr(u'坐标获取'),
             callback=self.run,
+            parent=self.iface.mainWindow())
+
+        icon_path2 = ':/plugins/position_fetch/imageshowIcon.png'
+        self.add_action(
+            icon_path2,
+            text=self.tr(u'坐标获取xxx'),
+            callback=imageShowmain,
             parent=self.iface.mainWindow())
 
     #--------------------------------------------------------------------------
@@ -230,6 +237,17 @@ class PositionGetter:
         del self.toolbar
 
     #--------------------------------------------------------------------------
+    # def run2(self):
+    #     self.dlg = ImageShowDialog()
+    #
+    #     # show the dialog
+    #     self.dlg.show()
+    #     # Run the dialog event loop
+    #     result = self.dlg.exec_()
+    #     # See if OK was pressed
+    #     if result:
+    #         print('xxxxx')
+
 
     def run(self):
         """Run method that loads and starts the plugin"""
@@ -326,7 +344,10 @@ class PositionGetter:
         #                                                                 point.y(),
         #                                                                 self.canvasCrsDisplayPrecision))
     def orc(self):
-        self.dockwidget.userCrsEdit.setText(orc_run())
+        text=orc_run()
+        text=text.replace(' ','')
+        text=text.replace("'",'')
+        self.dockwidget.userCrsEdit.setText(text)
     def startCapturing(self):
         self.iface.mapCanvas().setMapTool(self.mapTool)
 
